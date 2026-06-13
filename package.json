@@ -1,0 +1,291 @@
+{
+  "name": "sintra",
+  "displayName": "C/C++ Blitz",
+  "description": "C/C++ code navigation powered by tree-sitter. Built for embedded code where IntelliSense struggles.",
+  "version": "0.0.36",
+  "publisher": "tsj",
+  "license": "MIT",
+  "icon": "resources/icon-7-l.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nkg2502/project_s_stealth_mode.git"
+  },
+  "engines": {
+    "vscode": "^1.99.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "cBlitz.goToDefinition",
+        "title": "Go to Definition",
+        "category": "C/C++ Blitz"
+      },
+      {
+        "command": "cBlitz.fuzzySymbolSearch",
+        "title": "Search Symbols",
+        "category": "C/C++ Blitz"
+      },
+      {
+        "command": "cBlitz.refreshRelations",
+        "title": "Refresh Code Insight",
+        "category": "C/C++ Blitz",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "cBlitz.reindexWorkspace",
+        "title": "Reindex Workspace",
+        "category": "C/C++ Blitz"
+      },
+      {
+        "command": "cBlitz.stopIndexing",
+        "title": "Stop Indexing",
+        "category": "C/C++ Blitz"
+      },
+      {
+        "command": "cBlitz.pinRelations",
+        "title": "Pin Code Insight",
+        "category": "C/C++ Blitz",
+        "icon": "$(pin)"
+      },
+      {
+        "command": "cBlitz.unpinRelations",
+        "title": "Unpin Code Insight",
+        "category": "C/C++ Blitz",
+        "icon": "$(pinned)"
+      },
+      {
+        "command": "cBlitz.findReferences",
+        "title": "Find All References",
+        "category": "C/C++ Blitz"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "cBlitz.fuzzySymbolSearch",
+        "key": "f10",
+        "when": "editorTextFocus && (editorLangId == c || editorLangId == cpp) && !inDebugMode"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cBlitz",
+          "title": "C/C++ Blitz",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "cBlitz": [
+        {
+          "id": "cBlitzRelations",
+          "name": "Code Insight"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "cBlitz.pinRelations",
+          "when": "view == cBlitzRelations && !cBlitz.relationsPinned",
+          "group": "navigation@1"
+        },
+        {
+          "command": "cBlitz.unpinRelations",
+          "when": "view == cBlitzRelations && cBlitz.relationsPinned",
+          "group": "navigation@1"
+        },
+        {
+          "command": "cBlitz.refreshRelations",
+          "when": "view == cBlitzRelations",
+          "group": "navigation@2"
+        }
+      ]
+    },
+    "configuration": [
+      {
+        "title": "Files & Scope",
+        "order": 1,
+        "properties": {
+          "cBlitz.include": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Glob patterns that re-include paths an exclude pattern removed (gitignore-style exceptions). NOT a whitelist: everything is indexed by default, so an include only matters to carve an exception out of an exclude — e.g. exclude '**/linux-src/**' + include '**/linux-src/fs/**' indexes only the fs subtree of an otherwise-excluded folder. Removing an exclude pattern re-admits its files on the next scan."
+          },
+          "cBlitz.exclude": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "**/node_modules/**",
+              "**/.git/**",
+              "**/build/**",
+              "**/out/**",
+              "**/dist/**"
+            ],
+            "description": "Glob patterns to exclude from indexing (build output, third-party, etc.). Applied gitignore-style; a later 'include' pattern can re-admit a subset."
+          },
+          "cBlitz.fileExtensions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              ".c",
+              ".h",
+              ".cpp",
+              ".cc",
+              ".cxx",
+              ".hpp",
+              ".hh",
+              ".hxx",
+              ".inc"
+            ],
+            "description": "File extensions to index."
+          }
+        }
+      },
+      {
+        "title": "Indexing",
+        "order": 2,
+        "properties": {
+          "cBlitz.indexing.workerCount": {
+            "type": "number",
+            "default": 8,
+            "minimum": 1,
+            "maximum": 32,
+            "description": "Number of parallel worker threads used for the initial/bulk index. Workers are spawned on demand up to this count (an already up-to-date workspace stays near zero). Each worker parses on its own thread and writes to the shared SQLite index (WAL)."
+          },
+          "cBlitz.indexing.deferQueriesMs": {
+            "type": "number",
+            "default": 1500,
+            "minimum": 0,
+            "description": "How long Go to Definition / symbol search / the Code Insight view wait for an in-flight reindex to finish before proceeding, so results reflect the latest edits. Adds no latency when nothing is indexing. Set to 0 to disable deferral (always query immediately)."
+          },
+          "cBlitz.indexing.verifyContentHash": {
+            "type": "boolean",
+            "default": false,
+            "description": "When a file's modification time changes, re-hash its contents and skip re-parsing if they are byte-identical. Avoids needless re-indexing after operations that bump mtimes without changing content (e.g. git checkout / branch switch), at the cost of reading each changed file on the host. Off by default (modification-time check only)."
+          },
+          "cBlitz.parse.timeoutMs": {
+            "type": "number",
+            "default": 5000,
+            "description": "Per-file tree-sitter parse timeout. Exceeding it falls back to the regex (grep) scanner."
+          },
+          "cBlitz.parse.errorRatioThreshold": {
+            "type": "number",
+            "default": 0.25,
+            "description": "If the share of a file's bytes inside tree-sitter ERROR nodes exceeds this, fall back to the regex (grep) scanner."
+          },
+          "cBlitz.parse.maxFileSizeKB": {
+            "type": "number",
+            "default": 2048,
+            "description": "Files larger than this (KB) are indexed with the regex (grep) scanner instead of tree-sitter. They are still indexed, not skipped."
+          },
+          "cBlitz.db.location": {
+            "type": "string",
+            "default": "",
+            "description": "Directory for the SQLite index database. Empty = VS Code workspace storage. On Remote-SSH this path is resolved on the remote host. The DB filename is namespaced by a hash of the workspace root."
+          }
+        }
+      },
+      {
+        "title": "Search",
+        "order": 3,
+        "properties": {
+          "cBlitz.fuzzy.maxResults": {
+            "type": "number",
+            "default": 200,
+            "description": "Maximum results shown in fuzzy symbol search (F10)."
+          }
+        }
+      },
+      {
+        "title": "Code Insight",
+        "order": 4,
+        "properties": {
+          "cBlitz.codeInsight.debounceMs": {
+            "type": "number",
+            "default": 200,
+            "description": "Debounce (ms) before the Code Insight view follows the cursor."
+          },
+          "cBlitz.codeInsight.hideEmptyCategories": {
+            "type": "boolean",
+            "default": true,
+            "description": "Hide a Code Insight category when it has no entries for the symbol under the cursor (e.g. a function with no callers won't show an empty \"Called by\")."
+          },
+          "cBlitz.codeInsight.show.symbol": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show the \"Symbol\" summary (the kind, declared type / function signature, storage class, and definition/declaration locations of the symbol under the cursor) in the Code Insight view."
+          },
+          "cBlitz.codeInsight.show.type": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show the \"Type\" row (the declared type of the variable/field under the cursor, expandable to that type's definition) in the Code Insight view."
+          },
+          "cBlitz.codeInsight.show.definition": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show the \"Definition\" category in the Code Insight view."
+          },
+          "cBlitz.codeInsight.show.declaration": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show the \"Declaration\" category in the Code Insight view."
+          },
+          "cBlitz.codeInsight.show.calledBy": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show the \"Called by\" category in the Code Insight view."
+          },
+          "cBlitz.codeInsight.show.calls": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show the \"Calls\" category in the Code Insight view."
+          },
+          "cBlitz.codeInsight.show.references": {
+            "type": "boolean",
+            "default": true,
+            "description": "Show the \"References\" category in the Code Insight view."
+          }
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "node esbuild.js --production",
+    "typecheck": "tsc --noEmit",
+    "test": "node esbuild.js && node dist/test.js",
+    "test:unit": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node --test \"out/test/**/*.test.js\"",
+    "test:external": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\" && tsc -p tsconfig.test.json && node --test \"out/test/compilerFixtures.test.js\"",
+    "vscode:prepublish": "npm run package",
+    "release": "npm test && npm run test:unit && npm run test:external && node -e \"const fs=require('fs');fs.readdirSync('.').filter(f=>f.endsWith('.vsix')).forEach(f=>fs.rmSync(f))\" && vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "web-tree-sitter": "^0.26.10"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.21",
+    "@types/vscode": "^1.99.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.24.2",
+    "tree-sitter-c": "^0.24.1",
+    "tree-sitter-cpp": "^0.23.4",
+    "typescript": "^5.7.3"
+  }
+}

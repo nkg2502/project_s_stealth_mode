@@ -1,0 +1,38 @@
+# Source and config — only dist/ ships (no native module: node:sqlite is built in,
+# so node_modules is not needed at runtime; packaged with `vsce --no-dependencies`).
+src/**
+test/**
+resources/**
+node_modules/**
+.vscode/**
+.claude/**
+.gitignore
+.gitattributes
+.eslintrc*
+esbuild.js
+tsconfig.json
+tsconfig.test.json
+CLAUDE.md
+**/*.ts
+**/*.map
+out/**
+*.vsix
+
+# Dev-only docs, scratch test scripts, and task notes — not for release.
+HANDOFF.md
+RESUME.md
+ast_test.js
+tasks/**
+package-lock.json
+
+# Keep: dist/**, resources/icon.svg (activity bar), resources/icon-7-l.png (marketplace).
+# All of resources/** is ignored above, so only these two icons ship — none of the
+# other generated PNG variants (icon-light*, icon-transparent*, …) do.
+!dist/**
+!resources/icon.svg
+!resources/icon-7-l.png
+
+# ...but never ship the test bundle or sourcemaps even if a dev build left them.
+dist/test.js
+dist/test.js.map
+dist/**/*.map
