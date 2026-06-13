@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+*.vsix
+*.tsbuildinfo
+
+# Sintra SQLite index (when stored inside the workspace)
+*.db
+*.db-wal
+*.db-shm
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# Test artifacts
+.vscode-test/
+coverage/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+
+# Note: .vscode/ (launch.json, tasks.json), resources/grammars/*.wasm,
+# and prebuilds/ are intentionally tracked — they are part of the dev setup
+# and are bundled into the .vsix.
