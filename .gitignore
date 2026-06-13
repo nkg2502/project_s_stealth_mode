@@ -21,6 +21,9 @@ yarn-error.log*
 .vscode-test/
 coverage/
 
+# Local test corpus (downloaded, not tracked) — e.g. the Linux kernel source
+test/linux-src/
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db
@@ -28,3 +31,5 @@ Thumbs.db
 # Note: .vscode/ (launch.json, tasks.json), resources/grammars/*.wasm,
 # and prebuilds/ are intentionally tracked — they are part of the dev setup
 # and are bundled into the .vsix.
+
+test/fixtures/compiler_tests/
